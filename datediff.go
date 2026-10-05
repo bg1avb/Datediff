@@ -40,7 +40,10 @@ func (*Datetime) Birthday(b, e time.Time) (year, month, day int) {
 	}
 	//try days add all months before then calcdate
 	closeDay = b.AddDate(0, month, 0)
-	if closeDay.Day() != b.Day() {
+	//仅 2/29 生日跨年到非闰年时，Go 的 AddDate 把周年日溢出到 3/1。
+	//此处按 Feb 28 截断约定补偿 1 天。其他月末生日（1/31、3/31 等）
+	//的溢出属于 Go 的前向归一化，不应补偿，否则会多算 1 天。
+	if b.Month() == time.February && b.Day() == 29 && closeDay.Day() != b.Day() {
 		leapday = 1
 	}
 	month = month % 12
