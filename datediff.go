@@ -20,6 +20,10 @@ func (*Datetime) Birthday(b, e time.Time) (year, month, day int) {
 	if b.After(e) {
 		b, e = e, b
 	}
+	//归一到本地时区午夜，避免 b、e 携带的时分秒影响日历日比较
+	//(例如 b=12:00 而 e=time.Now() 上午取值会少算 1 天)。
+	b = time.Date(b.Year(), b.Month(), b.Day(), 0, 0, 0, 0, time.Local)
+	e = time.Date(e.Year(), e.Month(), e.Day(), 0, 0, 0, 0, time.Local)
 	//try years
 	for {
 		if !b.AddDate(year, 0, 0).After(e) {
@@ -66,13 +70,13 @@ func (*Datetime) Birthday(b, e time.Time) (year, month, day int) {
 // 用于新生儿期等需要"满 N 天"的场景。
 // 与 Birthday 不同，不会用月份填满，因此跨月/跨闰年时
 // 仍只返回天数；不能复用 Birthday 的 day 字段。
-// 内部归一到 UTC 午夜，规避 Local 时区夏令时干扰。
+// 内部归一到本地时区午夜，与 Birthday 保持一致。
 func (*Datetime) Days(b, e time.Time) int {
 	if b.After(e) {
 		b, e = e, b
 	}
-	b = time.Date(b.Year(), b.Month(), b.Day(), 0, 0, 0, 0, time.UTC)
-	e = time.Date(e.Year(), e.Month(), e.Day(), 0, 0, 0, 0, time.UTC)
+	b = time.Date(b.Year(), b.Month(), b.Day(), 0, 0, 0, 0, time.Local)
+	e = time.Date(e.Year(), e.Month(), e.Day(), 0, 0, 0, 0, time.Local)
 	n := 0
 	for b.AddDate(0, 0, n).Before(e) {
 		n++
