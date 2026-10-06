@@ -1,6 +1,7 @@
 package datediff
 
 import (
+	"math"
 	"time"
 )
 
@@ -82,4 +83,28 @@ func (*Datetime) Days(b, e time.Time) int {
 		n++
 	}
 	return n
+}
+
+// Round 将浮点数 v 四舍五入（HALF_UP：0.5 向绝对值大的方向进 1）
+// 保留 n 位小数。n 为负数时表示向左取整（如 n=-2 保留到百位）。
+// 统一的舍入入口，避免在调用点各自处理导致结果不一致或浮点尾差。
+// NaN、Inf 原样返回。
+//
+// 注意：二进制浮点表示本就不精确，例如 1.255 在 float64 中并非精确值，
+// Round(1.255, 2) 可能得到 1.25 而非 1.26。若需要十进制精确舍入，
+// 应先以字符串或 big.Rat 表达输入再做舍入。
+func (*Datetime) Round(v float64, n int) float64 {
+	return Round(v, n)
+}
+
+// Round 是包级四舍五入函数，与 Datetime.Round 行为一致。
+// 实现采用 math.Round（round half away from zero），即 HALF_UP 语义。
+func Round(v float64, n int) float64 {
+	if math.IsNaN(v) || math.IsInf(v, 0) {
+		return v
+	}
+	pow10 := math.Pow10(n)
+	// 先放大到整数位，用 math.Round 做"四舍五入"，再缩回。
+	// math.Round 对正负数均按"远离零"处理，等价于十进制的 HALF_UP。
+	return math.Round(v*pow10) / pow10
 }
